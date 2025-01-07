@@ -36,6 +36,12 @@ Please provide answers to these questions using markdown notation and place them
 
 3. Please provide a link to the repository you are using for this class.
 
+- [My Repo](https://github.com/SudoVoid1/CS283)
+
 4. Briefly describe what you want to get out of this class.
 
+- I want to get better at coding in C and learn more about processes and signals.
+
 5. Briefly describe any concerns you might be having with being successful in this class (if any).
+
+- N/A
