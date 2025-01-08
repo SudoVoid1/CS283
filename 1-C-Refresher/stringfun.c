@@ -12,7 +12,8 @@ int setup_buff(char *, char *, int);
 // prototypes for functions to handle required functionality
 int count_words(char *, int, int);
 int reverse_words(char *, int, int);
-int word_print(char *, int);
+int print_words(char *, int, int);
+int replace_words(char *, int, int, char *, char *);
 // add additional prototypes here
 
 int setup_buff(char *buff, char *user_str, int len)
@@ -77,8 +78,12 @@ void usage(char *exename)
     printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
 }
 
-int count_words(char *buff, int len, int str_len)
+int count_words(char *buff, int buff_len, int str_len)
 {
+    if (str_len > buff_len)
+    {
+        return -1;
+    }
     int wordCounter = 0;
     char *buffPtr = buff;
     int insideWord = 0;
@@ -140,16 +145,16 @@ int print_words(char *buff, int buff_len, int str_len)
 {
     if (str_len > buff_len)
     {
-        return -1; // Error: string length exceeds buffer length
+        return -1;
     }
     else if (str_len == 0)
     {
-        return 0; // No words to process
+        return 0; // No words
     }
     else
     {
         char *buffPtr = buff;
-        char word[256]; // temp place to hold the word
+        char word[256];
         char *wordPtr = word;
         int wordCounter = 0;
         int charCounter = 0;
@@ -170,12 +175,13 @@ int print_words(char *buff, int buff_len, int str_len)
                 *wordPtr = '\0';
                 wordCounter++;
                 printf("%d. %s (%d)\n", wordCounter, word, charCounter);
+                // Reset after a word ends
                 wordPtr = word;
                 charCounter = 0;
             }
             buffPtr++;
         }
-        // Print the last word even if it goes up to the end of the buffer
+        // handle cases at the end of the buffer
         if (charCounter > 0)
         {
             *wordPtr = '\0';
@@ -183,10 +189,14 @@ int print_words(char *buff, int buff_len, int str_len)
             printf("%d. %s (%d)\n", wordCounter, word, charCounter);
         }
 
-        return wordCounter;
+        return 0;
     }
 }
-
+int replace_words(char *buff, int buff_len, int str_len, char *oldword, char *newword)
+{
+    printf("Not Implemented\n");
+    return -1;
+}
 int main(int argc, char *argv[])
 {
 
@@ -199,7 +209,7 @@ int main(int argc, char *argv[])
     // TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
 
     // This is safe because C shortcuts or statements, meaning that if the first condition
-    //  argc < 2  is true it doesnt evaluate the second part of the or since T v anything is true.
+    //  argc < 2  is true it doesnt evaluate the second part of the or since (T v anything) is true.
     // Therefore, to get to the second condition there must be more than 2 arguements passed and thus argv[1] must exist.
 
     if ((argc < 2) || (*argv[1] != '-'))
@@ -246,8 +256,8 @@ int main(int argc, char *argv[])
     user_str_len = setup_buff(buff, input_string, BUFFER_SZ); // see todos
     if (user_str_len < 0)
     {
-        printf("Error setting up buffer, error = %d", user_str_len);
-        exit(2);
+        printf("Error setting up buffer, error = %d\n", user_str_len);
+        exit(3);
     }
 
     switch (opt)
@@ -256,7 +266,7 @@ int main(int argc, char *argv[])
         rc = count_words(buff, BUFFER_SZ, user_str_len); // you need to implement
         if (rc < 0)
         {
-            printf("Error counting words, rc = %d", rc);
+            printf("Error counting words, rc = %d\n", rc);
             exit(2);
         }
         printf("Word Count: %d\n", rc);
@@ -269,7 +279,7 @@ int main(int argc, char *argv[])
         rc = reverse_words(buff, BUFFER_SZ, user_str_len);
         if (rc < 0)
         {
-            printf("Error reversing words, rc = %d", rc);
+            printf("Error reversing words, rc = %d\n", rc);
             exit(3);
         }
         break;
@@ -281,6 +291,22 @@ int main(int argc, char *argv[])
             exit(3);
         }
         break;
+    case 'x':
+        if (!(argc == 5))
+        {
+            printf("Error replacing words, not enough arguements given\n");
+            exit(1);
+        }
+        else
+        {
+            rc = replace_words(buff, BUFFER_SZ, user_str_len, argv[3], argv[4]);
+            if (rc < 0)
+            {
+                printf("Error replacing words, rc = %d\n", rc);
+                exit(3);
+            }
+        }
+        break;
 
     default:
         usage(argv[0]);
@@ -289,6 +315,7 @@ int main(int argc, char *argv[])
 
     // TODO:  #6 Dont forget to free your buffer before exiting
     print_buff(buff, BUFFER_SZ);
+    free(buff);
     exit(0);
 }
 
@@ -298,4 +325,9 @@ int main(int argc, char *argv[])
 //           is a good practice, after all we know from main() that
 //           the buff variable will have exactly 50 bytes?
 //
-//           PLACE YOUR ANSWER HERE
+//
+// Well the buffer length is a defined size, but if you ever wanted to change it, it could break functionality in these helper functions or require the user to change hardcoded things multiple times.
+// In this scenerio, you would only need to change the defination at the top and it would be passed down to all functions.
+// Additionally, by being able to check the size of the buffer against user input (in each helper function) it ensures that there wont be a buffer overflow in which
+// unintented memory could be accessed and cause other issues.
+//
