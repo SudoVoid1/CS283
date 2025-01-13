@@ -324,10 +324,8 @@ int main(int argc, char *argv[])
 //           do you think providing both the pointer and the length
 //           is a good practice, after all we know from main() that
 //           the buff variable will have exactly 50 bytes?
-//
-//
+
 // Well the buffer length is a defined size, but if you ever wanted to change it, it could break functionality in these helper functions or require the user to change hardcoded things multiple times.
 // In this scenerio, you would only need to change the defination at the top and it would be passed down to all functions.
 // Additionally, by being able to check the size of the buffer against user input (in each helper function) it ensures that there wont be a buffer overflow in which
 // unintented memory could be accessed and cause other issues.
-//
