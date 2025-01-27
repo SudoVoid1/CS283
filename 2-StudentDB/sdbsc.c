@@ -10,6 +10,24 @@
 #include "db.h"
 #include "sdbsc.h"
 
+off_t get_curr_pos(int fd, int id, int SEEK_TYPE)
+{
+    int offset = id * STUDENT_RECORD_SIZE;
+    return lseek(fd, offset, SEEK_TYPE);
+}
+
+student_t populate_student(int id, char *fname, char *lname, int gpa)
+{
+    student_t student;
+    student.id = id;
+    student.gpa = gpa;
+    strncpy(student.fname, fname, sizeof(student.fname - 1));
+    student.fname[sizeof(student.fname) - 1] = '\0';
+    strncpy(student.lname, lname, sizeof(student.lname) - 1);
+    student.fname[sizeof(student.lname) - 1] = '\0';
+    return student;
+}
+
 /*
  *  open_db
  *      dbFile:  name of the database file
@@ -90,10 +108,41 @@ int get_student(int fd, int id, student_t *s)
  *            M_ERR_DB_WRITE    error writing to db file (adding student)
  *
  */
+
 int add_student(int fd, int id, char *fname, char *lname, int gpa)
 {
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+
+    off_t pos = get_curr_pos(fd, id, SEEK_SET);
+    if (pos == -1)
+    {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+    else
+    {
+        student_t buffer = EMPTY_STUDENT_RECORD;
+        ssize_t byte_count = read(fd, &buffer, STUDENT_RECORD_SIZE);
+        if (byte_count == -1)
+        {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+        else if (memcmp(&buffer, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
+        {
+            printf(M_ERR_DB_ADD_DUP, id);
+            return ERR_DB_OP;
+        }
+    }
+    // Passing through all those check indicates the section in the file is empty
+    // and a student can be added
+    student_t new_student = populate_student(id, fname, lname, gpa);
+    if (write(fd, &new_student, STUDENT_RECORD_SIZE) == -1)
+    {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+    printf(M_STD_ADDED, id);
+    return NO_ERROR;
 }
 
 /*
@@ -223,7 +272,15 @@ int print_db(int fd)
  */
 void print_student(student_t *s)
 {
-    printf(M_NOT_IMPL);
+    if (s == NULL || s->id == 0)
+    {
+        printf(M_DB_EMPTY);
+    }
+    else
+    {
+        printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
+        printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, (float)s->gpa / 100);
+    }
 }
 
 /*
