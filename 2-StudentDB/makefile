@@ -21,7 +21,7 @@ clean:
 	rm -f $(TARGET)
 	rm -f student.db
 
-test:
+test: all
 	./test.sh
 
 # Phony targets
