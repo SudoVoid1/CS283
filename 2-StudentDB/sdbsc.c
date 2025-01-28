@@ -193,7 +193,8 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
  */
 int del_student(int fd, int id)
 {
-    if (get_student(fd, id, &EMPTY_STUDENT_RECORD) == -3)
+    student_t empty_buffer = EMPTY_STUDENT_RECORD;
+    if (get_student(fd, id, &empty_buffer) == SRCH_NOT_FOUND)
     {
         printf(M_STD_NOT_FND_MSG, id);
         return ERR_DB_OP;
