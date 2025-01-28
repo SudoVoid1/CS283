@@ -262,8 +262,40 @@ int count_db_records(int fd)
  */
 int print_db(int fd)
 {
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    bool print_something = false;
+    bool print_header = true;
+    student_t student = EMPTY_STUDENT_RECORD;
+    ssize_t bytes;
+    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE)) > 0)
+    {
+        if (bytes == -1)
+        {
+            // Error with read
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+        else
+        {
+            // checks if empty/deleted
+            if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
+            {
+                if (print_header)
+                {
+                    printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
+                    print_header = false;
+                }
+                print_student(&student);
+                print_something = true;
+            }
+        }
+        // reset buffer for next block
+        student = EMPTY_STUDENT_RECORD;
+    }
+    if (!print_something)
+    {
+        printf(M_DB_EMPTY);
+    }
+    return NO_ERROR;
 }
 
 /*
