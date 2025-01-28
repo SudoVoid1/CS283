@@ -193,8 +193,26 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
  */
 int del_student(int fd, int id)
 {
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    if (get_student(fd, id, &EMPTY_STUDENT_RECORD) == -3)
+    {
+        printf(M_STD_NOT_FND_MSG, id);
+        return ERR_DB_OP;
+    }
+    else if (get_id_pos(fd, id, SEEK_SET) == -1)
+    {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+    else if (write(fd, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) == -1)
+    {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+    else
+    {
+        printf(M_STD_DEL_MSG, id);
+        return NO_ERROR;
+    }
 }
 
 /*
