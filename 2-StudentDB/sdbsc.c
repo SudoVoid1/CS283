@@ -223,8 +223,33 @@ int del_student(int fd, int id)
  */
 int count_db_records(int fd)
 {
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    int counter = 0;
+    student_t student = EMPTY_STUDENT_RECORD;
+    ssize_t bytes;
+    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE)) > 0)
+    {
+        if (bytes == -1)
+        {
+            // Error with read
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+        // checks if empty/deleted
+        if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
+        {
+            counter += 1;
+        }
+    }
+    if (counter == 0)
+    {
+        printf(M_DB_EMPTY);
+        return counter;
+    }
+    else
+    {
+        printf(M_DB_RECORD_CNT, counter);
+        return counter;
+    }
 }
 
 /*
