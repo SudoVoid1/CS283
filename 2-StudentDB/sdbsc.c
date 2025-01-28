@@ -274,22 +274,17 @@ int print_db(int fd)
             printf(M_ERR_DB_READ);
             return ERR_DB_FILE;
         }
-        else
+        // checks if empty/deleted
+        if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
         {
-            // checks if empty/deleted
-            if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
+            if (print_header)
             {
-                if (print_header)
-                {
-                    printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
-                    print_header = false;
-                }
-                print_student(&student);
-                print_something = true;
+                printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
+                print_header = false;
             }
+            print_student(&student);
+            print_something = true;
         }
-        // reset buffer for next block
-        student = EMPTY_STUDENT_RECORD;
     }
     if (!print_something)
     {
@@ -333,7 +328,6 @@ void print_student(student_t *s)
         printf(M_DB_EMPTY);
     }
     float gpa = (float)(s->gpa) / 100;
-    printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
     printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, gpa);
 }
 
@@ -566,6 +560,7 @@ int main(int argc, char *argv[])
         switch (rc)
         {
         case NO_ERROR:
+            printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
             print_student(&student);
             break;
         case SRCH_NOT_FOUND:
