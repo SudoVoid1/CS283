@@ -10,7 +10,7 @@
 #include "db.h"
 #include "sdbsc.h"
 
-off_t get_curr_pos(int fd, int id, int SEEK_TYPE)
+off_t get_id_pos(int fd, int id, int SEEK_TYPE)
 {
     int offset = id * STUDENT_RECORD_SIZE;
     return lseek(fd, offset, SEEK_TYPE);
@@ -80,7 +80,28 @@ int open_db(char *dbFile, bool should_truncate)
  */
 int get_student(int fd, int id, student_t *s)
 {
-    return NOT_IMPLEMENTED_YET;
+    off_t pos = get_id_pos(fd, id, SEEK_SET);
+    if (pos == -1)
+    {
+        return ERR_DB_FILE;
+    }
+    else
+    {
+        // Reads in the record at that id position in the file
+        ssize_t byte_count = read(fd, s, STUDENT_RECORD_SIZE);
+        if (byte_count == -1)
+        {
+            return ERR_DB_FILE;
+        }
+        // Compares the record at the id's position and a empty record
+        // Memcmp returns 0 if they are equal
+        // Thus, the entry at id's position is empty and student doesnt exist in db
+        else if (memcmp(s, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) == 0)
+        {
+            return SRCH_NOT_FOUND;
+        }
+    }
+    return NO_ERROR;
 }
 
 /*
@@ -112,7 +133,7 @@ int get_student(int fd, int id, student_t *s)
 int add_student(int fd, int id, char *fname, char *lname, int gpa)
 {
 
-    off_t pos = get_curr_pos(fd, id, SEEK_SET);
+    off_t pos = get_id_pos(fd, id, SEEK_SET);
     if (pos == -1)
     {
         printf(M_ERR_DB_READ);
@@ -121,12 +142,15 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
     else
     {
         student_t buffer = EMPTY_STUDENT_RECORD;
+        // Reads in the record at that id position in the file
         ssize_t byte_count = read(fd, &buffer, STUDENT_RECORD_SIZE);
         if (byte_count == -1)
         {
             printf(M_ERR_DB_READ);
             return ERR_DB_FILE;
         }
+        // Compares the record at the id's position and a empty record
+        // Memcmp returns 0 if they are equal (thus position is empty)
         else if (memcmp(&buffer, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)
         {
             printf(M_ERR_DB_ADD_DUP, id);
@@ -276,11 +300,9 @@ void print_student(student_t *s)
     {
         printf(M_DB_EMPTY);
     }
-    else
-    {
-        printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
-        printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, (float)s->gpa / 100);
-    }
+    float gpa = (float)(s->gpa) / 100;
+    printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
+    printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, gpa);
 }
 
 /*
@@ -509,7 +531,6 @@ int main(int argc, char *argv[])
         }
         id = atoi(argv[2]);
         rc = get_student(fd, id, &student);
-
         switch (rc)
         {
         case NO_ERROR:
