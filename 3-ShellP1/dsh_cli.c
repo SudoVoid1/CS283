@@ -96,6 +96,6 @@ int main()
             }
         }
     }
-
+    free(cmd_buff);
     exit(OK);
 }
