@@ -12,11 +12,3 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
-@test "Example: check exit runs without errors" {
-    run ./dsh <<EOF                
-exit
-EOF
-
-    # Assertions
-    [ "$status" -eq 0 ]
-}

@@ -7,14 +7,47 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include "dshlib.h"
+extern void print_dragon();
 
 int exec_cmd(cmd_buff_t *cmd)
 {
-    return -1;
+    pid_t f_result;
+    int c_result;
+
+    f_result = fork();
+    if (f_result < 0)
+    {
+        return ERR_EXEC_CMD;
+    }
+
+    if (f_result == 0)
+    {
+        // Child
+        if (execvp(cmd->argv[0], cmd->argv) < 0)
+        {
+            return ERR_EXEC_CMD;
+        }
+    }
+
+    // parent
+    wait(&c_result);
+    return c_result;
 }
 
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd)
 {
+    // If there is no args for cd
+    if (cmd->argv[1] == NULL)
+    {
+        return BI_EXECUTED;
+    }
+    else
+    {
+        if (chdir(cmd->argv[1]) == -1)
+        {
+            return BI_RC;
+        }
+    }
     return BI_EXECUTED;
 }
 
@@ -28,7 +61,7 @@ Built_In_Cmds match_command(const char *input)
     {
         return BI_CMD_DRAGON;
     }
-    else if (strcmp("cd", input) == 0)
+    else if (strcmp("cd", input) == 0 || strcmp("CD", input) == 0)
     {
         return BI_CMD_CD;
     }
@@ -40,21 +73,17 @@ Built_In_Cmds match_command(const char *input)
 
 int free_cmd_buff(cmd_buff_t *cmd_buff)
 {
+    if (cmd_buff->_cmd_buffer)
+    {
+        free(cmd_buff->_cmd_buffer);
+        cmd_buff->_cmd_buffer = NULL;
+    }
     return OK;
 }
 
 int clear_cmd_buff(cmd_buff_t *cmd_buff)
 {
-    return OK;
-}
-
-int alloc_cmd_buff(cmd_buff_t *cmd_buff)
-{
-    cmd_buff->_cmd_buffer = (char *)malloc(SH_CMD_MAX);
-    if (cmd_buff->_cmd_buffer == NULL)
-    {
-        return ERR_MEMORY;
-    }
+    memset(cmd_buff->_cmd_buffer, 0, SH_CMD_MAX);
     cmd_buff->argc = 0;
 
     for (int i = 0; i < CMD_ARGV_MAX; i++)
@@ -62,9 +91,27 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff)
         // Initilize argv as NULL, as they will later point to buffer or signify the end of the args
         cmd_buff->argv[i] = NULL;
     }
+
     return OK;
 }
 
+int alloc_cmd_buff(cmd_buff_t *cmd_buff)
+{
+
+    if (cmd_buff->_cmd_buffer == NULL)
+    {
+        cmd_buff->_cmd_buffer = (char *)malloc(SH_CMD_MAX);
+        if (cmd_buff->_cmd_buffer == NULL)
+        {
+            return ERR_MEMORY;
+        }
+    }
+    // If it already is allocated but is empty just clear it
+    clear_cmd_buff(cmd_buff);
+    return OK;
+}
+
+// TODO HANDLE QUOTES IN ARGS
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 {
     int rc = OK;
@@ -77,16 +124,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
     {
         return WARN_NO_CMDS;
     }
-    // else if (strcmp(cmd_line, EXIT_CMD) == 0)
-    // {
-    //     cmd_buff->argc = 1;
-    //     strcpy(cmd_buff->argv[0], EXIT_CMD);
-    // }
-    // else if (strcmp(cmd_line, "dragon") == 0)
-    // {
-    //     cmd_buff->argc = 1;
-    //     strcpy(cmd_buff->argv[0], "dragon");
-    // }
     else
     {
         // Copy the raw string into the struct.
@@ -243,7 +280,7 @@ int exec_local_cmd_loop()
         }
         else if (rc == ERR_CMD_OR_ARGS_TOO_BIG)
         {
-            clear_cmd_buff(&cmd);
+            break;
         }
         else
         {
@@ -258,29 +295,28 @@ int exec_local_cmd_loop()
             }
             else if (rc == BI_CMD_DRAGON)
             {
-                printf("RARW");
-                // print_dragon();
+                // printf("RARW");
+                print_dragon();
             }
             else if (rc == BI_CMD_CD)
             {
-                printf("CD");
-                exec_built_in_cmd(&cmd);
+                if (exec_built_in_cmd(&cmd) == BI_RC)
+                {
+                    return ERR_CMD_ARGS_BAD;
+                }
             }
             else if (rc == BI_NOT_BI)
             {
                 exec_cmd(&cmd);
             }
-
-            // Since the command has been exec we can clear the cmd_buff now!
-            clear_cmd_buff(&cmd);
         }
     }
     free_cmd_buff(&cmd);
     return OK;
 }
-// TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
+// TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff DONE
 
-// TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
+// TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon) PARTIALLY, TODO CD LOGIC
 // the cd command should chdir to the provided directory; if no directory is provided, do nothing
 
 // TODO IMPLEMENT if not built-in command, fork/exec as an external command
