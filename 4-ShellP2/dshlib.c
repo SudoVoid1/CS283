@@ -119,14 +119,15 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
     {
         return ERR_MEMORY;
     }
-    // First test if user input was empty.
+
+    // Sanity check the input isnt empty
     if (cmd_line == NULL || *cmd_line == '\0')
     {
         return WARN_NO_CMDS;
     }
     else
     {
-        // Copy the raw string into the struct.
+        // Copy input into buff
         strcpy(cmd_buff->_cmd_buffer, cmd_line);
         cmd_buff->_cmd_buffer[SH_CMD_MAX - 1] = '\0';
 
@@ -158,10 +159,15 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
         // Do all the args
         ptr = exe_end + 1;
         size_t args_combined_length = 0;
+
+        // Vars to handle quotes
+        bool in_quote_mode = false;
+        char *arg_start = NULL;
+
         while (*ptr != '\0' && cmd_buff->argc < CMD_ARGV_MAX - 1) // last arg need to be NULL for execv
         {
             // Skip spaces
-            while (*ptr && isspace(*ptr))
+            while (*ptr && isspace(*ptr) && !in_quote_mode)
             {
                 ptr++;
             }
@@ -170,12 +176,28 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
             {
                 break;
             }
-
-            char *arg_start = ptr;
-
-            // Find end of the argument
-            while (*ptr != '\0' && !isspace(*ptr))
+            if (*ptr == '"')
             {
+                in_quote_mode = !in_quote_mode;
+                ptr++;
+                arg_start = ptr;
+            }
+            else
+            {
+                arg_start = ptr;
+            }
+            // Find end of the argument
+            while (*ptr != '\0' && (in_quote_mode || !isspace(*ptr)))
+            {
+                // if its a quote it and in quote mode, we have found the end of the arg
+                //  switch mode and null terminate that part like normal
+                if (*ptr == '"' && in_quote_mode)
+                {
+                    in_quote_mode = false;
+                    *ptr = '\0';
+                    ptr++;
+                    break;
+                }
                 ptr++;
             }
 
@@ -194,8 +216,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 
             ptr++;
         }
-        // Setting last arg to be NULL, shouldnt be neccesary as they are already null
-        // cmd_buff->argv[cmd_buff->argc] = NULL;
     }
     return rc;
 }
@@ -270,6 +290,7 @@ int exec_local_cmd_loop()
         else if (rc == WARN_NO_CMDS)
         {
             printf(CMD_WARN_NO_CMD);
+            free_cmd_buff(&cmd);
             return WARN_NO_CMDS;
         }
         else if (rc == ERR_TOO_MANY_COMMANDS)
@@ -291,6 +312,7 @@ int exec_local_cmd_loop()
 
             if (rc == BI_CMD_EXIT)
             {
+                free_cmd_buff(&cmd);
                 exit(OK_EXIT);
             }
             else if (rc == BI_CMD_DRAGON)
