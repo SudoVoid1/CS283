@@ -111,7 +111,6 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff)
     return OK;
 }
 
-// TODO HANDLE QUOTES IN ARGS
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 {
     int rc = OK;
@@ -329,7 +328,10 @@ int exec_local_cmd_loop()
             }
             else if (rc == BI_NOT_BI)
             {
-                exec_cmd(&cmd);
+                if (exec_cmd(&cmd) == ERR_EXEC_CMD)
+                {
+                    return ERR_EXEC_CMD;
+                };
             }
         }
     }
