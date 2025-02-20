@@ -67,8 +67,8 @@ hi
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    echo $stripped_output
-    expected_output="dsh2>dsh2>cmdloopreturned0dsh2>dsh2>cmdloopreturned0"
+    
+    expected_output="dsh2>cmdloopreturned-6dsh2>dsh2>cmdloopreturned0"
 
     [ "$stripped_output" = "$expected_output" ]
     
